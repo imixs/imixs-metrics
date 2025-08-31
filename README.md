@@ -18,7 +18,7 @@ Key benefits include complete visibility into process execution patterns, perfor
 
 ### [Imixs Metrics Business](./imixs-metrics-business/README.md)
 
-The Value Metrics module introduces a revolutionary approach to process management by enabling organizations to capture costs and values directly within their BPMN models. This transforms static process diagrams into dynamic business intelligence tools that reveal the true economics of process execution.
+This module introduces a revolutionary approach to process management by enabling organizations to capture costs and values directly within their BPMN models. This transforms static process diagrams into dynamic business intelligence tools that reveal the true economics of process execution.
 
 With this module, organizations can annotate workflow activities with associated costs, such as processing expenses or resource consumption, and track value generation like captured discounts or customer satisfaction improvements. The module supports both fixed values and dynamic calculations based on process data, adapting to various business scenarios.
 

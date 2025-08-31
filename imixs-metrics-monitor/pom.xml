@@ -1,0 +1,46 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.imixs.workflow</groupId>
+		<artifactId>imixs-metrics</artifactId>
+		<version>1.0.0-SNAPSHOT</version>
+	</parent>
+	<artifactId>imixs-metrics-monitor</artifactId>
+	<name>Imixs-Metrics Monitor</name>
+	<description>
+		The Metrics Monitor module provides operational analytics for Imixs-Workflow processes. 
+		It tracks workflow executions, event frequencies, and performance patterns to help organizations identify bottlenecks, 
+		optimize resource allocation, and improve process efficiency. It integrates seamlessly with standard monitoring platforms 
+		like Prometheus and Grafana, enabling real-time process monitoring and alerting within existing IT infrastructures.
+	</description>
+
+
+	<dependencies>
+		<dependency>
+			<groupId>org.imixs.workflow</groupId>
+			<artifactId>imixs-workflow-core</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.imixs.workflow</groupId>
+			<artifactId>imixs-workflow-engine</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.imixs.workflow</groupId>
+			<artifactId>imixs-workflow-jax-rs</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.imixs.workflow</groupId>
+			<artifactId>imixs-workflow-faces</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.imixs.workflow</groupId>
+			<artifactId>imixs-data-views</artifactId>
+			<scope>compile</scope>
+		</dependency>
+
+	</dependencies>
+
+</project>
