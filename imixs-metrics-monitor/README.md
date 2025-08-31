@@ -52,6 +52,17 @@ The module will continue to evolve with the monitoring landscape, adopting new s
 
 Imixs-Workflow provides runtime metrics based on the [Microprofile Metric API](https://microprofile.io/project/eclipse/microprofile-metrics). The Eclipse Microprofile Metrics specification provides an unified way to export Monitoring data ("Telemetry") to management agents and also a unified Java API.
 
+Add the following Maven Dependency:
+
+```xml
+	<parent>
+		<groupId>org.imixs.workflow</groupId>
+		<artifactId>imixs-metrics</artifactId>
+		<version>1.0.0-SNAPSHOT</version>
+	</parent>
+	<artifactId>imixs-metrics-monitor</artifactId>
+```
+
 The Imixs-Metric Serivce is disabled per default. To enable the feature set the property 'metrics.enabled' to 'true.
 
     metrics.enabled=true
@@ -324,3 +335,128 @@ public void handleRequest() {
     // Concurrent request handling
 }
 ```
+
+# Metrics Security
+
+The metrics endpoint `/api/metrics` exposes application metrics in Prometheus format. For production environments, we recommend a combination of network-level isolation and optional API key authentication.
+
+## Configuration
+
+Set these properties in your `microprofile-config.properties`:
+
+```properties
+# Enable metrics collection
+metrics.enabled=true
+metrics.anonymised=true
+
+# Optional API key for additional security
+metrics.api-key=your-secret-metrics-key-here
+```
+
+**Note**: If `metrics.api-key` is empty or not set, no API key validation is performed.
+
+## API Key Usage
+
+When an API key is configured, all metrics endpoints require the key as a query parameter:
+
+```bash
+# Access metrics with API key
+curl "http://localhost:8080/your-app/api/metrics?key=your-secret-metrics-key-here"
+
+# Access stats with API key
+curl "http://localhost:8080/your-app/api/metrics/stats?key=your-secret-metrics-key-here"
+```
+
+Configure Prometheus to scrape with API key:
+
+```yaml
+scrape_configs:
+  - job_name: "imixs-workflow"
+    static_configs:
+      - targets: ["imixs-metrics.default.svc.cluster.local:8080"]
+    metrics_path: "/your-app/api/metrics"
+    params:
+      key: ["your-secret-metrics-key-here"] # API key as query parameter
+    scrape_interval: 15s
+```
+
+## Kubernetes Deployment
+
+If running in Kubernetes you can create in addition separate services for your application and metrics endpoints:
+
+```yaml
+# Main application service (externally accessible)
+apiVersion: v1
+kind: Service
+metadata:
+  name: imixs-app
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 80
+      targetPort: 8080
+  selector:
+    app: imixs-workflow
+
+---
+# Metrics service (cluster-internal only)
+apiVersion: v1
+kind: Service
+metadata:
+  name: imixs-metrics
+  labels:
+    app: metrics
+spec:
+  type: ClusterIP # Internal access only
+  ports:
+    - port: 8080
+      targetPort: 8080
+  selector:
+    app: imixs-workflow # Same pods as main app
+```
+
+## Docker Compose Deployment
+
+Use separate networks and environment variables:
+
+```yaml
+services:
+  app:
+    image: your-app:latest
+    ports:
+      - "80:8080" # Only main app externally accessible
+    networks:
+      - frontend
+      - metrics-internal
+    environment:
+      - METRICS_API_KEY=your-secret-metrics-key-here
+
+  prometheus:
+    image: prom/prometheus:latest
+    networks:
+      - metrics-internal # Can reach app metrics, but not externally accessible
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+
+networks:
+  frontend:
+  metrics-internal:
+    internal: true # No external access
+```
+
+## Security Benefits
+
+- **Network isolation**: Metrics endpoint not accessible from internet
+- **API key protection**: Additional authentication layer for metrics access
+- **Same application**: No code changes or separate authentication required
+- **Prometheus compatibility**: Native support for query parameter authentication
+- **Defense in depth**: Application authentication + network isolation + API key
+- **Container native**: Leverages built-in container networking security
+
+## Security Recommendations
+
+1. **Use both network isolation AND API key** for maximum security
+2. **Rotate API keys regularly** using environment variables or secrets management
+3. **Use strong, random API keys** (minimum 32 characters)
+4. **Never commit API keys to version control** - use environment variables or K8s secrets
+5. **Monitor metrics endpoint access** in your application logs

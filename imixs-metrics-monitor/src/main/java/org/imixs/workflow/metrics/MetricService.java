@@ -8,7 +8,7 @@
  *
  * This Source Code may also be made available under the terms of the
  * GNU General Public License, version 2 or later (GPL-2.0-or-later),
- * which is available at https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
+ * which available at https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
  *
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-or-later
  ****************************************************************************/
@@ -17,55 +17,39 @@ package org.imixs.workflow.metrics;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.eclipse.microprofile.metrics.Counter;
-import org.eclipse.microprofile.metrics.Metadata;
-import org.eclipse.microprofile.metrics.MetricRegistry;
-import org.eclipse.microprofile.metrics.Tag;
-import org.eclipse.microprofile.metrics.annotation.RegistryScope;
 import org.imixs.workflow.WorkflowKernel;
 import org.imixs.workflow.engine.DocumentEvent;
 import org.imixs.workflow.engine.ProcessingEvent;
 import org.imixs.workflow.exceptions.AccessDeniedException;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tag;
+import io.micrometer.core.instrument.Tags;
+import io.micrometer.prometheus.PrometheusMeterRegistry;
+import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.ObserverException;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 
 /**
  * The Imixs MetricService is a monitoring resource for Imixs-Workflow in the
- * prometheus format. The MetricService is based on Microprofile 6.0 and
- * MP-Metric-API 5.0
- * <p>
- * A metric is created each time when a Imixs ProcessingEvent or Imixs
- * DocumentEvent is fired. The service exports metrics in prometheus text
- * format.
- * <p>
- * The service provides counter metrics for document access and processed
- * workitems. A counter will always increase. To extract the values in
- * prometheus use the rate function - Example:
- * <p>
- * <code>rate(http_requests_total[5m])</code>
- * <p>
- * The service expects MP Metrics v2.0. A warning is logged if corresponding
- * version is missing.
- * <p>
- * To enable the metric service the imixs.property ... must be set to true
- * </p>
+ * prometheus format. This implementation uses Micrometer embedded in the WAR
+ * for cross-server compatibility (WildFly, Payara, Open Liberty).
  * 
- * @See https://www.robustperception.io/how-does-a-prometheus-counter-work
  * @author rsoika
- * @version 1.0
+ * @version 2.0
  */
 @ApplicationScoped
 public class MetricService {
 
-	public static final String METRIC_DOCUMENTS = "documents";
-	public static final String METRIC_WORKITEMS = "workitems";
-	public static final String METRIC_TRANSACTIONS = "transactions";
+	public static final String METRIC_DOCUMENTS = "imixs_documents_total";
+	public static final String METRIC_WORKITEMS = "imixs_workitems_total";
+	public static final String METRIC_TRANSACTIONS = "imixs_transactions_total";
 
 	@Inject
 	@ConfigProperty(name = "metrics.enabled", defaultValue = "false")
@@ -76,167 +60,157 @@ public class MetricService {
 	private boolean metricsAnonymised;
 
 	@Inject
-	@RegistryScope(scope = MetricRegistry.APPLICATION_SCOPE)
-	MetricRegistry metricRegistry;
+	private MeterRegistry meterRegistry;
 
-	boolean mpMetricNoSupport = false;
+	// Cache für Counter-Instanzen um Performance zu verbessern
+	private final ConcurrentHashMap<String, Counter> counterCache = new ConcurrentHashMap<>();
 
 	private static final Logger logger = Logger.getLogger(MetricService.class.getName());
 
+	@PostConstruct
+	public void init() {
+		if (metricsEnabled) {
+			logger.info("Imixs MetricService initialized - metrics enabled: " + metricsEnabled);
+			logger.info("Metrics anonymised: " + metricsAnonymised);
+			logger.info("Using MeterRegistry: " + meterRegistry.getClass().getSimpleName());
+		}
+	}
+
 	/**
 	 * ProcessingEvent listener to generate a metric.
-	 * 
-	 * @param processingEvent
-	 * @throws AccessDeniedException
 	 */
 	public void onProcessingEvent(@Observes ProcessingEvent processingEvent) throws AccessDeniedException {
-
-		if (!metricsEnabled) {
-			return;
-		}
-		if (processingEvent == null) {
-			return;
-		}
-		if (mpMetricNoSupport) {
-			// missing MP Metric support!
+		if (!metricsEnabled || processingEvent == null) {
 			return;
 		}
 
-		// NOTE: Issue #514 - just uncomment this code!
 		try {
-			Counter counter = buildWorkitemMetric(processingEvent);
-			counter.inc();
-		} catch (IncompatibleClassChangeError | ObserverException oe) {
-			mpMetricNoSupport = true;
-			logger.warning("...Microprofile Metrics not supported!");
+			Counter counter = getOrCreateWorkitemMetric(processingEvent);
+			counter.increment();
+		} catch (Exception e) {
+			logger.warning("Micrometer metric could not be updated: " + e.getMessage());
 		}
 	}
 
 	/**
 	 * DocumentEvent listener to generate a metric.
-	 * 
-	 * @param documentEvent
-	 * @throws AccessDeniedException
 	 */
 	public void onDocumentEvent(@Observes DocumentEvent documentEvent) throws AccessDeniedException {
-
-		if (!metricsEnabled) {
-			return;
-		}
-		if (documentEvent == null) {
-			return;
-		}
-		if (mpMetricNoSupport) {
-			// missing MP Metric support!
+		if (!metricsEnabled || documentEvent == null) {
 			return;
 		}
 
-		// NOTE: Issue #514 - just uncomment this code!
 		try {
-			Counter counter = buildDocumentMetric(documentEvent);
-			counter.inc();
-
-		} catch (IncompatibleClassChangeError | ObserverException oe) {
-			mpMetricNoSupport = true;
-			logger.warning("...Microprofile Metrics not supported!");
-			oe.printStackTrace();
+			Counter counter = getOrCreateDocumentMetric(documentEvent);
+			counter.increment();
+		} catch (Exception e) {
+			logger.warning("Micrometer metric could not be updated: " + e.getMessage());
 		}
 	}
 
 	/**
-	 * This method builds a Microprofile Metric for a Counter. The metric contains
-	 * the tag 'method'.
-	 * 
-	 * @return Counter metric
+	 * Erstellt oder holt einen gecachten Counter für Document-Events
 	 */
+	private Counter getOrCreateDocumentMetric(DocumentEvent event) {
+		String method = switch (event.getEventType()) {
+		case DocumentEvent.ON_DOCUMENT_SAVE -> "save";
+		case DocumentEvent.ON_DOCUMENT_LOAD -> "load";
+		case DocumentEvent.ON_DOCUMENT_DELETE -> "delete";
+		default -> "unknown";
+		};
 
-	// NOTE: Issue #514 - just uncomment this code!
+		String cacheKey = METRIC_DOCUMENTS + "_" + method;
 
-	private Counter buildDocumentMetric(DocumentEvent event) {
-
-		// Constructs a Metadata object from a map with the following keys:
-		// - name - The name of the metric
-		// - displayName - The display (friendly) name of the metric
-		// - description - The description of the metric
-		// - type - The type of the metric
-		// - tags - The tags of the metric - cannot be null
-		// - reusable - If true, this metric name is permitted to be used at multiple
-
-		Metadata metadata = Metadata.builder().withName(METRIC_DOCUMENTS)
-				.withDescription("Imixs-Workflow count documents").build();
-
-		String method = null;
-		// build tags...
-		if (DocumentEvent.ON_DOCUMENT_SAVE == event.getEventType()) {
-			method = "save";
-		}
-
-		if (DocumentEvent.ON_DOCUMENT_LOAD == event.getEventType()) {
-			method = "load";
-		}
-
-		if (DocumentEvent.ON_DOCUMENT_DELETE == event.getEventType()) {
-			method = "delete";
-		}
-
-		Tag[] tags = { new Tag("method", method) };
-
-		Counter counter = metricRegistry.counter(metadata, tags);
-
-		return counter;
+		return counterCache.computeIfAbsent(cacheKey, key -> Counter.builder(METRIC_DOCUMENTS)
+				.description("Total number of document operations")
+				.tag("method", method)
+				.register(meterRegistry));
 	}
 
 	/**
-	 * This method builds a Microprofile Metric for a Counter. The metric contains
-	 * the tags 'task', 'event', 'type', 'workflowgroup', 'worklowstatus',
-	 * 'modelversion'
-	 * 
-	 * @return Counter metric
+	 * Erstellt oder holt einen gecachten Counter für Workitem-Events
 	 */
-	private Counter buildWorkitemMetric(ProcessingEvent event) {
-
-		// Constructs a Metadata object from a map with the following keys:
-		// - name - The name of the metric
-		// - displayName - The display (friendly) name of the metric
-		// - description - The description of the metric
-		// - type - The type of the metric
-		// - tags - The tags of the metric - cannot be null
-		// - reusable - If true, this metric name is permitted to be used at multiple
-
-		// BEFORE_PROCESS
+	private Counter getOrCreateWorkitemMetric(ProcessingEvent event) {
 		if (event.getEventType() == ProcessingEvent.BEFORE_PROCESS) {
-			// only transaction count - independent form the result
-			Metadata metadata = Metadata.builder().withName(METRIC_TRANSACTIONS)
-					.withDescription("Imixs-Workflow transactions").build();
-			Counter counter = metricRegistry.counter(metadata);
-			return counter;
-
+			return counterCache.computeIfAbsent(METRIC_TRANSACTIONS, key -> Counter.builder(METRIC_TRANSACTIONS)
+					.description("Total number of workflow transactions")
+					.register(meterRegistry));
 		} else {
-			// AFTER_PROCESS
-			// build workflow tags...
-			List<Tag> tags = new ArrayList<Tag>();
-			tags.add(new Tag("type", event.getDocument().getType()));
-			tags.add(new Tag("modelversion", event.getDocument().getModelVersion()));
-			tags.add(new Tag("task", event.getDocument().getTaskID() + ""));
-			tags.add(new Tag("workflowgroup", event.getDocument().getItemValueString(WorkflowKernel.WORKFLOWGROUP)));
-			tags.add(new Tag("workflowstatus", event.getDocument().getItemValueString(WorkflowKernel.WORKFLOWSTATUS)));
+			// Tags für den Counter erstellen
+			Tags tags = buildWorkitemTags(event);
+			String cacheKey = METRIC_WORKITEMS + "_" + tags.toString().hashCode();
 
-			// metricsAnonymised = false?
-			if (!metricsAnonymised) {
-				// add the user id....
-				String user = event.getDocument().getItemValueString(WorkflowKernel.EDITOR);
-				tags.add(new Tag("user", user));
-			}
-			tags.add(new Tag("event", event.getDocument().getItemValueInteger("$lastevent") + ""));
-			Metadata metadata = Metadata.builder().withName(METRIC_WORKITEMS)
-					.withDescription("Imixs-Workflow count processed workitems").build();
-			Tag[] tagArr = tags.toArray(new Tag[tags.size()]);
-			Counter counter = metricRegistry.counter(metadata, tagArr);
-
-			return counter;
-
+			return counterCache.computeIfAbsent(cacheKey, key -> Counter.builder(METRIC_WORKITEMS)
+					.description("Total number of processed workitems")
+					.tags(tags)
+					.register(meterRegistry));
 		}
-
 	}
 
+	/**
+	 * Erstellt die Tags für Workitem-Metriken
+	 */
+	private Tags buildWorkitemTags(ProcessingEvent event) {
+		List<Tag> tagList = new ArrayList<>();
+
+		// Basis-Tags
+		tagList.add(Tag.of("type", sanitizeTagValue(event.getDocument().getType())));
+		tagList.add(Tag.of("modelversion", sanitizeTagValue(event.getDocument().getModelVersion())));
+		tagList.add(Tag.of("task", String.valueOf(event.getDocument().getTaskID())));
+		tagList.add(Tag.of("workflowgroup",
+				sanitizeTagValue(event.getDocument().getItemValueString(WorkflowKernel.WORKFLOWGROUP))));
+		tagList.add(Tag.of("workflowstatus",
+				sanitizeTagValue(event.getDocument().getItemValueString(WorkflowKernel.WORKFLOWSTATUS))));
+		tagList.add(Tag.of("event", String.valueOf(event.getDocument().getItemValueInteger("$lastevent"))));
+
+		// User-Tag nur wenn nicht anonymisiert
+		if (!metricsAnonymised) {
+			String user = sanitizeTagValue(event.getDocument().getItemValueString(WorkflowKernel.EDITOR));
+			tagList.add(Tag.of("user", user));
+		}
+
+		return Tags.of(tagList);
+	}
+
+	/**
+	 * Bereinigt Tag-Werte für Prometheus (entfernt problematische Zeichen)
+	 */
+	private String sanitizeTagValue(String value) {
+		if (value == null || value.trim().isEmpty()) {
+			return "unknown";
+		}
+		// Ersetze problematische Zeichen für Prometheus
+		return value.replaceAll("[^a-zA-Z0-9_-]", "_");
+	}
+
+	/**
+	 * Gibt Prometheus-Format zurück (nur für embedded Registry)
+	 */
+	public String scrape() {
+		if (!metricsEnabled) {
+			return "# Metrics disabled\n";
+		}
+
+		if (meterRegistry instanceof PrometheusMeterRegistry prometheusRegistry) {
+			return prometheusRegistry.scrape();
+		}
+
+		// Fallback für andere Registry-Typen
+		return "# Prometheus format not available for registry type: " + meterRegistry.getClass().getSimpleName()
+				+ "\n";
+	}
+
+	/**
+	 * Gibt Statistiken über den Service zurück (für Monitoring/Debugging)
+	 */
+	public int getCachedMetricsCount() {
+		return counterCache.size();
+	}
+
+	/**
+	 * Leert den Cache (nur für Tests/Debugging)
+	 */
+	public void clearCache() {
+		counterCache.clear();
+	}
 }
