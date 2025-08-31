@@ -1,10 +1,10 @@
-# Imixs-Metrics: Workflow Metrics Module
+# Imixs-Metrics: Monitor
 
-The Workflow Metrics module provides comprehensive monitoring and analytics capabilities for Imixs-Workflow processes.
+The **Imixs Metrics Monitor** provides comprehensive monitoring and analytics capabilities for an Imixs-Workflow instance.
 
 ## Overview
 
-Organizations using Imixs-Workflow need visibility into their process execution patterns to make informed decisions about optimization and resource allocation. This module addresses that need by providing detailed insights into workflow behavior, from simple frequency counts to complex performance analysis. By understanding how often workflows are executed, which paths are most commonly taken, and where time is being spent, organizations can identify bottlenecks, optimize resource allocation, and improve overall process efficiency.
+Organizations using Imixs-Workflow need visibility into their process execution patterns to make informed decisions about optimization and resource allocation. This module addresses that need by providing **detailed insights into workflow behavior, from simple frequency counts to complex performance analysis**. By understanding how often workflows are executed, which paths are most commonly taken, and where time is being spent, organizations can identify bottlenecks, optimize resource allocation, and improve overall process efficiency.
 
 The module goes beyond simple counting by providing context-rich metrics that include workflow versions, task states, and event transitions. This granular level of detail enables process owners to understand not just what is happening, but why certain patterns emerge in their workflow execution.
 

@@ -8,15 +8,15 @@ Traditional workflow systems excel at coordinating work but provide limited visi
 
 ## Modules
 
-### [Workflow Metrics Module](./imixs-metrics-stats/README.md)
+### [Imixs Metrics Monitor](./imixs-metrics-monitor/README.md)
 
 This module provides operational analytics for Imixs-Workflow processes. It tracks workflow executions, event frequencies, and performance patterns to help organizations identify bottlenecks, optimize resource allocation, and improve process efficiency. It integrates seamlessly with standard monitoring platforms like Prometheus and Grafana, enabling real-time process monitoring and alerting within existing IT infrastructures.
 
 Key benefits include complete visibility into process execution patterns, performance bottleneck identification, and data-driven capacity planning based on actual workflow usage.
 
-[☑️ Read more...](./imixs-metrics-stats/README.md)
+[☑️ Read more...](./imixs-metrics-monitor/README.md)
 
-### [Value Metrics Module](./imixs-metrics-values/README.md)
+### [Imixs Metrics Business](./imixs-metrics-business/README.md)
 
 The Value Metrics module introduces a revolutionary approach to process management by enabling organizations to capture costs and values directly within their BPMN models. This transforms static process diagrams into dynamic business intelligence tools that reveal the true economics of process execution.
 
@@ -24,7 +24,7 @@ With this module, organizations can annotate workflow activities with associated
 
 The primary advantage is the ability to make informed business decisions based on process economics rather than operational metrics alone. Organizations can calculate ROI for process improvements, identify cost drivers, and optimize processes for value creation rather than just efficiency.
 
-[☑️ Read more...](./imixs-metrics-values/README.md)
+[☑️ Read more...](./imixs-metrics-business/README.md)
 
 ## Combined Impact
 

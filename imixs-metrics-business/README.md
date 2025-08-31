@@ -1,8 +1,10 @@
-# Imixs-Metrics: Value Metrics Module
+# Imixs-Metrics: Business
+
+The **Imixs Metrics Business module** represents an innovative extension to the Imixs-Workflow platform that bridges the gap between process execution and business value.
 
 ## Overview
 
-The Value Metrics module represents an innovative extension to the Imixs-Workflow platform that bridges the gap between process execution and business value. While traditional workflow metrics tell you how often and how fast your processes run, they don't answer the critical business question: what do these processes actually cost, and what value do they generate? This module addresses that gap by enabling organizations to embed cost and value information directly into their BPMN models, creating a comprehensive picture of process economics.
+While traditional workflow metrics tell you how often and how fast your processes run, they don't answer the critical business question: what do these processes actually cost, and what value do they generate? This module addresses that gap by enabling organizations to **embed cost and value information directly into their BPMN models**, creating a comprehensive picture of process economics.
 
 ## The Business Challenge
 
