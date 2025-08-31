@@ -181,7 +181,7 @@ volumes:
 
 From the Prometheus Dashboard you can test the data within your web browser:
 
-<img src="../images/engine/imixs-metrics-prometheus-768x448.png" />
+<img src="./doc/imixs-metrics-prometheus-768x448.png" />
 
 ### Monitoring Metrics with Grafana
 
@@ -191,7 +191,7 @@ ports: - "3000:3000"
 
 To monitor you workflow you can easily connect your Prometheus server with a Grafana Instance. This allows you to visualize your metrics in an individual and more detailed dashboard.
 
-<img src="../images/engine/imixs-metrics-grafana-768x376.png" />
+<img src="./doc/imixs-metrics-grafana-768x376.png" />
 
 There are a huge amount of functions available in Grafana to analyze and monitor data. You can also activate individual alerts to notify your process owner about the load of your business processes.
 
