@@ -4,7 +4,7 @@
 	<artifactId>imixs-metrics</artifactId>
 	<packaging>pom</packaging>
 	<name>Imixs-Metrics</name>
-	<version>1.0.0</version>
+	<version>1.0.1-SNAPSHOT</version>
 
 	<modules>
 		<module>imixs-metrics-monitor</module>
@@ -57,7 +57,7 @@
 		<connection>scm:git:git@github.com:imixs/imixs-metrics.git</connection>
 		<developerConnection>scm:git:git@github.com:imixs/imixs-metrics.git</developerConnection>
 		<url>https://github.com/imixs/imixs-metrics/</url>
-		<tag>imixs-metrics-1.0.0</tag>
+		<tag>HEAD</tag>
 	</scm>
 
 	<issueManagement>
