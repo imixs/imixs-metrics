@@ -1,5 +1,7 @@
 package org.imixs.workflow.metrics.api;
 
+import java.util.Optional;
+
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.imixs.workflow.metrics.MetricService;
 
@@ -18,8 +20,8 @@ public class MetricsRestService {
     private MetricService metricService;
 
     @Inject
-    @ConfigProperty(name = "metrics.api-key", defaultValue = "")
-    private String metricsApiKey;
+    @ConfigProperty(name = "metrics.api-key")
+    private Optional<String> metricsApiKey;
 
     /**
      * Returns metrics in Prometheus-Format - compatible with WildFly, Payara, Open
@@ -31,13 +33,14 @@ public class MetricsRestService {
     @Produces("text/plain")
     public Response getPrometheusMetrics(@QueryParam("key") String providedKey) {
         // Check API key if configured
-        if (!metricsApiKey.isEmpty()) {
-            if (providedKey == null || !metricsApiKey.equals(providedKey)) {
+        if (metricsApiKey.isPresent() && !metricsApiKey.get().isEmpty()) {
+            if (providedKey == null || !metricsApiKey.get().equals(providedKey)) {
                 return Response.status(Response.Status.UNAUTHORIZED)
                         .entity("# Unauthorized: Invalid or missing API key")
                         .build();
             }
         }
+
         try {
             String metrics = metricService.scrape();
             return Response.ok(metrics)
@@ -59,8 +62,8 @@ public class MetricsRestService {
     public Response getStats(@QueryParam("key") String providedKey) {
 
         // Check API key if configured
-        if (!metricsApiKey.isEmpty()) {
-            if (providedKey == null || !metricsApiKey.equals(providedKey)) {
+        if (metricsApiKey.isPresent() && !metricsApiKey.get().isEmpty()) {
+            if (providedKey == null || !metricsApiKey.get().equals(providedKey)) {
                 return Response.status(Response.Status.UNAUTHORIZED)
                         .entity("{\"error\": \"Invalid or missing API key\"}")
                         .build();
