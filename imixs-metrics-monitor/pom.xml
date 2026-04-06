@@ -3,7 +3,7 @@
 	<parent>
 		<groupId>org.imixs.workflow</groupId>
 		<artifactId>imixs-metrics</artifactId>
-		<version>1.0.1-SNAPSHOT</version>
+		<version>1.0.1</version>
 	</parent>
 	<artifactId>imixs-metrics-monitor</artifactId>
 	<name>Imixs-Metrics Monitor</name>
