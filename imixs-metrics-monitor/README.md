@@ -55,12 +55,12 @@ Imixs-Workflow provides runtime metrics based on the [Microprofile Metric API](h
 Add the following Maven Dependency:
 
 ```xml
-	<parent>
+	<dependency>
 		<groupId>org.imixs.workflow</groupId>
-		<artifactId>imixs-metrics</artifactId>
-		<version>1.0.0-SNAPSHOT</version>
-	</parent>
-	<artifactId>imixs-metrics-monitor</artifactId>
+	  <artifactId>imixs-metrics-monitor</artifactId>
+		<version>1.0.1</version>
+	</dependency>
+
 ```
 
 The Imixs-Metric Serivce is disabled per default. To enable the feature set the property 'metrics.enabled' to 'true.
